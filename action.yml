@@ -232,6 +232,7 @@ runs:
         EXTENSIONS: '${{ inputs.extensions }}'
         USE_PNPM: '${{ inputs.use_pnpm }}'
       shell: 'bash'
+      continue-on-error: true
       run: |-
         set -euo pipefail
 
