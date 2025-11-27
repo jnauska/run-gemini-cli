@@ -260,8 +260,6 @@ runs:
         fi
         echo "Verifying installation:"
         if command -v gemini >/dev/null 2>&1; then
-        echo "Verifying installation:"
-        if command -v gemini >/dev/null 2>&1; then
           gemini --version || echo "Gemini CLI installed successfully (version command not available)"
         else
           echo "Error: Gemini CLI not found in PATH"
