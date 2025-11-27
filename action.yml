@@ -279,8 +279,9 @@ runs:
     - name: 'Run Gemini CLI'
       id: 'gemini_run'
       shell: 'bash'
+      continue-on-error: true
       run: |-
-        set -x
+        set -euo pipefail
 
         # Create a temporary directory for storing the output, and ensure it's
         # cleaned up later
