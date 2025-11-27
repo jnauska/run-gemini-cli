@@ -232,28 +232,34 @@ runs:
         EXTENSIONS: '${{ inputs.extensions }}'
         USE_PNPM: '${{ inputs.use_pnpm }}'
       shell: 'bash'
-      continue-on-error: true
       run: |-
         set -euo pipefail
 
         VERSION_INPUT="${GEMINI_CLI_VERSION:-latest}"
+        SKIP_GEMINI_INSTALL_IF_PRESENT="${SKIP_GEMINI_INSTALL_IF_PRESENT:-true}"
 
-        if [[ "${VERSION_INPUT}" == "latest" || "${VERSION_INPUT}" == "preview" || "${VERSION_INPUT}" == "nightly" || "${VERSION_INPUT}" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9\.-]+)?(\+[a-zA-Z0-9\.-]+)?$ ]]; then
-          echo "Installing Gemini CLI from npm: @google/gemini-cli@${VERSION_INPUT}"
-          if [[ "${USE_PNPM}" == "true" ]]; then
-            pnpm add --silent --global @google/gemini-cli@"${VERSION_INPUT}"
-          else
-            npm install --silent --no-audit --prefer-offline --global @google/gemini-cli@"${VERSION_INPUT}"
-          fi
+        if [[ "${SKIP_GEMINI_INSTALL_IF_PRESENT}" == "true" ]] && command -v gemini >/dev/null 2>&1; then
+          echo "Gemini CLI already installed: $(gemini --version || echo 'version unavailable')"
         else
-          echo "Installing Gemini CLI from GitHub: github:google-gemini/gemini-cli#${VERSION_INPUT}"
-          git clone https://github.com/google-gemini/gemini-cli.git
-          cd gemini-cli
-          git checkout "${VERSION_INPUT}"
-          npm install
-          npm run bundle
-          npm install --silent --no-audit --prefer-offline --global .
+          if [[ "${VERSION_INPUT}" == "latest" || "${VERSION_INPUT}" == "preview" || "${VERSION_INPUT}" == "nightly" || "${VERSION_INPUT}" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9\.-]+)?(\+[a-zA-Z0-9\.-]+)?$ ]]; then
+            echo "Installing Gemini CLI from npm: @google/gemini-cli@${VERSION_INPUT}"
+            if [[ "${USE_PNPM}" == "true" ]]; then
+              pnpm add --silent --global @google/gemini-cli@"${VERSION_INPUT}"
+            else
+              npm install --silent --no-audit --prefer-offline --global @google/gemini-cli@"${VERSION_INPUT}"
+            fi
+          else
+            echo "Installing Gemini CLI from GitHub: github:google-gemini/gemini-cli#${VERSION_INPUT}"
+            git clone https://github.com/google-gemini/gemini-cli.git
+            cd gemini-cli
+            git checkout "${VERSION_INPUT}"
+            npm install
+            npm run bundle
+            npm install --silent --no-audit --prefer-offline --global .
+          fi
         fi
+        echo "Verifying installation:"
+        if command -v gemini >/dev/null 2>&1; then
         echo "Verifying installation:"
         if command -v gemini >/dev/null 2>&1; then
           gemini --version || echo "Gemini CLI installed successfully (version command not available)"
@@ -293,7 +299,7 @@ runs:
         # Run Gemini CLI with the provided prompt, streaming responses in debug
         if [[ "${DEBUG}" = true ]]; then
           echo "::warning::Gemini CLI debug logging is enabled. This will stream responses, which could reveal sensitive information if processed with untrusted inputs."
-          if ! { gemini --yolo --prompt "${PROMPT}" }; then
+          if ! gemini --yolo --prompt "${PROMPT}" ; then
             FAILED=true
           fi
         else
